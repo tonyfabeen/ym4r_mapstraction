@@ -257,7 +257,8 @@ Mapstraction.prototype.removeMarker = function(marker) {
       tmparray.push(current_marker);
     }
   }
-  this.markers.concat(tmparray);
+  
+  this.markers = this.markers.concat(tmparray);
 }
 
 /**

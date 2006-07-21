@@ -99,6 +99,10 @@ module Ym4r
         @init << add_marker(marker)
       end
 
+      def marker_group_init(marker_group)
+        @init << add_marker_group(marker_group)
+      end
+
       #Sets the map type displayed by default after the map is loaded.
       def set_map_type_init(map_type)
         @init << set_map_type(map_type)
@@ -114,10 +118,16 @@ module Ym4r
         @global_init << code
       end
             
-      #Declares the overlay globally with name +name+
+      #Declares the marker globally with name +name+
       def marker_global_init(marker,name)
         declare_global_init(marker,name)
-        @init << add_marker(marker)
+        marker_init(marker)
+      end
+
+      #Declares the marker group globally with name +name+
+      def marker_group_global_init(marker_group,name)
+        declare_global_init(marker_group,name)
+        marker_group_init(marker_group)
       end
 
       #Globally declare a MappingObject with variable name "name"

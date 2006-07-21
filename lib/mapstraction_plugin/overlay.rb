@@ -38,25 +38,27 @@ module Ym4r
     end
     
     #A rectangular bounding box, defined by its south-western and north-eastern corners.
-    class BoundingBox < Struct.new(:sw,:ne)
+    class BoundingBox < Struct.new(:swlat,:swlon,:nelat,:nelon)
       include MappingObject
       def create
-        if sw.is_a?(Array)
-          swlat = sw[0]
-          swlon = sw[1]
-        else #LatLonPoint
-          swlat = sw.lat
-          swlon = sw.lon
-        end
-        if(ne.is_a?(Array))
-          nelat = ne[0]
-          nelon = ne[1]
-        else #LatLonPoint
-          nelat = ne.lat
-          nelon = ne.lon
-        end
-        "new BoundingBox(#{swlat},#{swlon},#{nelat},#{nelon})"
+        "new BoundingBox(#{MappingObject.javascriptify_variable(swlat)},#{MappingObject.javascriptify_variable(swlon)},#{MappingObject.javascriptify_variable(nelat)},#{MappingObject.javascriptify_variable(nelon)})"
       end
     end
+
+    #Represents a group of Markers. The whole group can be shown on and off at once. It should be declared global at initialization time to be useful.
+    class MarkerGroup
+      include MappingObject
+      attr_accessor :active, :markers
+
+      def initialize(markers, active = true )
+        @active = active
+        @markers = markers
+      end
+      
+      def create
+        "new MarkerGroup(#{MappingObject.javascriptify_variable(@markers)},#{MappingObject.javascriptify_variable(@active)})"
+      end
+    end
+
   end
 end
