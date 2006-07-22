@@ -3,27 +3,27 @@
 This is the YM4R/Mapstraction plugin for Rails. It is aimed at facilitating the use of the Mapstraction library from Rails application. 
 
 ==Getting Started
-I present here the most common operations you would want to do with YM4R/GM. Read the rest of the documents if you want more details.
+I present here the most common operations you would want to do with YM4R/Mapstraction. Read the rest of the documents if you want more details.
 
 In your controller, here is a typical initialization sequence in action +index+:
 	def index
-	  @map = GMap.new("map_div")
-	  @map.control_init(:large_map => true,:map_type => true)
+	  @map = Mapstraction.new("map_div",:yahoo)
+	  @map.control_init(:small => true)
 	  @map.center_zoom_init([75.5,-42.56],4)
-	  @map.overlay_init(GMarker.new([75.6,-42.467],:title => "Hello", :info_window => "Info! Info!"))
+	  @map.marker_init(Marker.new([75.6,-42.467],:label => "Hello", :info_bubble => "Info! Info!"))
 	end
 
-Here I create a GMap (which will be placed inside a DIV of id +map_div+), add controls (large zoom slider and pan cross + map type selector), set the center and the zoom and add a marker. Of these 4 steps only the creation of the map and the setting of the center and the zoom are absolutely necessary.
+Here I create a Mapstraction map (which will be placed inside a DIV of id +map_div+) which will use Yahoo! Maps, add a small control (it is the only available control currently), set the center and the zoom and add a marker. Of these 4 steps only the creation of the map and the setting of the center and the zoom are absolutely necessary. Apart from Yahoo! Maps, I could have created a map of type <tt>:google</tt> (Google Maps) or <tt>:microsoft</tt> (Virtual Earth).
 
 In your view, here is what you would have:
 	<html><head><title>Test</title>
-	<%= GMap.header %>
+	<%= Mapstraction.header(:yahoo) %>
 	<%= @map.to_html %>
 	</head><body>
 	<%= @map.div(:width => 600, :height => 400) %>
 	</body></html>
 
-First you must output the header, used by all the maps of the page: It includes the Google Maps API JS code and the JS helper functions of YM4R/GM. Then we initialize the map by calling <tt>@map.to_html</tt>. In the body, we need a DIV whose +id+ is the same as the one passed to the GMap constructor in the controller. The call to <tt>@map.div</tt> outputs such a DIV. We pass to it options to set the width and height of the map in the style attribute of the DIV. 
+First you must output the header, used by all the maps of the page: It includes the Mapstraction JS code and the JS helper functions of YM4R/Mapstraction. It also includes the API files, as determined according to the parameter of the method. Usually, if you only have one map, there will be a single symbol, identical to the one used to create the map. But you can also pass an array of symbols, in which case all the corresponding API's will be included. Then we initialize the map by calling <tt>@map.to_html</tt>. In the body, we need a DIV whose +id+ is the same as the one passed to the Mapstraction constructor in the controller. The call to <tt>@map.div</tt> outputs such a DIV. We pass to it options to set the width and height of the map in the style attribute of the DIV. 
 
 <b>Note that you need to set a size for the map DIV element at some point or the map will not be displayed.</b> You have a few ways to do this:
 - You define it yourself, wherever you want. Usually as part of the layout definition in an external CSS.
@@ -33,16 +33,16 @@ First you must output the header, used by all the maps of the page: It includes 
 You can update the map trough RJS. Here is an action you can call from a <tt>link_remote_tag</tt> which would do this:
 	def update
 	  @map = Variable.new("map")
-	  @marker = GMarker.new([75.89,-42.767],:title => "Update", :info_window => "I have been placed through RJS")
+	  @marker = Marker.new([75.89,-42.767],:label => "Update", :info_bubble => "I have been placed through RJS")
 	end
 
-Here, I first bind the Ruby <tt>@map</tt> variable to the JS variable <tt>map</tt>, which already exists in the client browser. +map+ is by default the name given to a map created from YM4R/GM (this could be overriden by passing a second argument to the GMap constructor). Then I create a marker.
+Here, I first bind the Ruby <tt>@map</tt> variable to the JS variable <tt>map</tt>, which already exists in the client browser. +map+ is by default the name given to a map created from YM4R/Mapstraction (this could be overriden by passing a second argument to the Mapstraction constructor). Then I create a marker.
 
 And you would have inside the RJS template for the action:
-	page << @map.clear_overlays
-	page << @map.add_overlay(@marker)
+	page << @map.remove_all_markers
+	page << @map.add_marker(@marker)
 
-Here I first clear the map of all overlays. Then I add the marker. Note that the +overlay_init+ is not used anymore since, as its name indicates, this method is only for the initialization of the map.
+Here I first clear the map of all markers. Then I add the marker. Note that the +marker_init+ is not used anymore since, as its name indicates, this method is only for the initialization of the map.
 
 ==Installation
 Install like any other Rails plugin:
@@ -50,13 +50,22 @@ Install like any other Rails plugin:
 
 As part of the installation procedure, the JavaScript files found in the <tt>PLUGIN_ROOT/javascript</tt> directory will be copied to the <tt>RAILS_ROOT/public/javascripts/</tt> directory. 
 
-Moreover a <tt>gmaps_api_key.yml</tt> file will also be created in the <tt>RAILS_ROOT/config/</tt> folder. This is in order to setup the Google Maps API in case you want to use it with Mapstraction. If this file already exists (installed for example by a previous version of the plugin), nothing will be done to it, so you can keep your configuration data even after updating the plugin. This file is a YAML representation of a hash, similar to the <tt>database.yml</tt> file in that the primary keys in the file are the different environments (development, test, production), since you will probably need to have different Google Maps API keys depending on that criteria (for example: a key for localhost for development and test; a key for your host for production). If you don't have any special need, there will be only one key associated with each environment. If however, you need to have multiple keys (for example if your app will be accessible from multiple URLs, for which you need different keys), you can also associate a hash to the environment, whose keys will be the different hosts. In this case, you will need to pass a value to the <tt>:host</tt> key when calling the method <tt>Mapstraction.header</tt> (usually <tt>@request.host</tt>). 
+Moreover a <tt>gmaps_api_key.yml</tt> file will also be created in the <tt>RAILS_ROOT/config/</tt> folder. This is in order to setup the Google Maps API in case you want to use it with Mapstraction. You don't need to do anything special if you use only Yahoo! Maps or Virtual Earth. If this file already exists (installed for example by a previous version of the plugin), nothing will be done to it, so you can keep your configuration data even after updating the plugin. This file is a YAML representation of a hash, similar to the <tt>database.yml</tt> file in that the primary keys in the file are the different environments (development, test, production), since you will probably need to have different Google Maps API keys depending on that criteria (for example: a key for localhost for development and test; a key for your host for production). If you don't have any special need, there will be only one key associated with each environment. If however, you need to have multiple keys (for example if your app will be accessible from multiple URLs, for which you need different keys), you can also associate a hash to the environment, whose keys will be the different hosts. In this case, you will need to pass a value to the <tt>:host</tt> key when calling the method <tt>Mapstraction.header</tt> (usually <tt>@request.host</tt>). 
 
-==Changes since the last version
+
+==Switching the mapping API
+It is the goal of the Mapstraction API to make it trivial to switch API (for example, in case the currently used API changes its term of service). It is equally easy to do this with YM4R/Mapstraction. You need to do 2 things:
+- Change the provider when creating a Mapstraction map
+- Change the provider when calling the <tt>Mapstraction.header</tt>
+
+==Recent changes
 - Release of the project
+- MarkerGroup
+- Some corrections to the main Mapstraction file (in removeMarker)
 
 ==TODO
 - Update to newer versions of Mapstraction as they come along
+- More documentation
 
 ==License
 The YM4R/Mapstraction plugin is released under the MIT license. 
