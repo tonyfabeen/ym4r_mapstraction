@@ -14,8 +14,8 @@ end
 
 desc 'Generate documentation for the ym4r_mapstraction plugin.'
 Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'Ym4rMapstraction'
+  rdoc.rdoc_dir = 'ym4r_mapstraction-doc'
+  rdoc.title    = 'Ym4r/Mapstraction'
   rdoc.options << '--line-numbers' << '--inline-source'
   rdoc.rdoc_files.include('README')
   rdoc.rdoc_files.include('lib/**/*.rb')
