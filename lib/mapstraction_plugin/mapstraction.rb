@@ -14,7 +14,7 @@ module Ym4r
                   
       #The id of the DIV that will contain the map in the HTML page. 
       attr_reader :container, :map_type
-      
+
       #A constant containing the declaration of the VML namespace, necessary to display polylines in google maps under IE.
       VML_NAMESPACE = "xmlns:v=\"urn:schemas-microsoft-com:vml\""
 
@@ -83,6 +83,7 @@ module Ym4r
       #Initializes the controls: you can pass a hash with key <tt>:small</tt> (only one for now) and a boolean value as the value (usually true, since the control is not displayed by default)
       def control_init(controls = {})
         @init << add_small_controls() if controls[:small]
+        @init << add_large_controls() if controls[:large]
       end
 
       #Initializes the initial center and zoom of the map. +center+ can be both a GLatLng object or a 2-float array.
@@ -92,6 +93,20 @@ module Ym4r
         else
           @init_begin << set_center_and_zoom(LatLonPoint.new(center),zoom)
         end
+      end
+
+      #Center and zoom based on the bbox corners. Pass a GLatLngBounds object, an array of 2D coordinates (sw and ne) or an array of GLatLng objects (sw and ne).
+      def center_zoom_on_bounds_init(bounds)
+        if bounds.is_a?(Array)
+          if bounds[0].is_a?(Array)
+            bounds = BoundingBox.new(bounds[0][0],bounds[0][1],bounds[1][0],bounds[1][1])
+          elsif bounds[0].is_a?(LatLonPoint)
+            bounds = BoundingBox.new(bounds[0].lat,bounds[0].lon,bounds[1].lat,bounds[1].lon)
+          end
+        end
+        #else it is already a latlngbounds object
+
+        @init_begin << set_bounds(bounds)
       end
 
       #Initializes the map by adding a marker

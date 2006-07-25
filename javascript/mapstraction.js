@@ -53,6 +53,18 @@ function loadScript(src,callback) {
   return;
 }
 
+function convertLatLonXY_Yahoo(point,level){ //Mercator
+    var size = 1 << (26 - level);
+    var pixel_per_degree = size / 360.0;
+    var pixel_per_radian = size / (2 * Math.PI)
+    var origin = new YCoordPoint(size / 2 , size / 2)
+    var answer = new YCoordPoint();
+    answer.x = Math.floor(origin.x + point.lon * pixel_per_degree)
+    var sin = Math.sin(point.lat * Math.PI / 180.0)
+    answer.y = Math.floor(origin.y + 0.5 * Math.log((1 + sin) / (1 - sin)) * -pixel_per_radian)
+    return answer;
+}
+
 /**
  *
  */
@@ -181,6 +193,25 @@ Mapstraction.prototype.addSmallControls = function() {
 }
 
 /**
+ * addLargeControls adds a small map panning control and zoom buttons to the map
+ */
+Mapstraction.prototype.addLargeControls = function() {
+  switch (this.api) {
+    case 'yahoo':
+      this.map.addPanControl();
+      this.map.addZoomLong();
+      break;
+    case 'google':
+      this.map.addControl(new GLargeMapControl());
+      this.map.addControl(new GMapTypeControl());
+      this.map.addControl(new GScaleControl()) ;
+      this.map.addControl(new GOverviewMapControl()) ;
+      break;
+  }
+}
+
+
+/**
  * setCenterAndZoom centers the map to some place and zoom level
  * @param {LatLonPoint} point Where the center of the map should be
  * @param {int} zoom The zoom level where 0 is all the way out.
@@ -257,7 +288,6 @@ Mapstraction.prototype.removeMarker = function(marker) {
       tmparray.push(current_marker);
     }
   }
-  
   this.markers = this.markers.concat(tmparray);
 }
 
@@ -265,22 +295,18 @@ Mapstraction.prototype.removeMarker = function(marker) {
  * removeAllMarkers removes all the Markers on a map
  */
 Mapstraction.prototype.removeAllMarkers = function() {
-  // FIXME MSFT maps can do map.DeleteAllPushpins(); .. can the others?
-
-  for(var i = 0; i < this.markers.length; i++){
-    switch (this.api) {
-      case 'google':
-        this.map.removeOverlay(this.markers[i].proprietary_marker);
-        break;
-      case 'yahoo':
-        this.map.removeOverlay(this.markers[i].proprietary_marker);
-        break;
-      case 'microsoft':
-        this.map.DeletePushpin(this.markers[i].pinID);
-        break;
-    }
+  switch (this.api) {
+    case 'yahoo':
+      this.map.removeMarkersAll();
+      break;
+    case 'google':
+      this.map.clearOverlays();
+      break;
+    case 'microsoft':
+      this.map.DeleteAllPushpins();
+      break;
   }
-  this.map.markers = new Array();
+  this.map.markers = new Array(); // clear the mapstraction list of markers too
 }
 
 /**
@@ -417,20 +443,56 @@ Mapstraction.prototype.getBounds = function () {
       var sw = gbox.getSouthWest();
       var ne = gbox.getNorthEast();
       return new BoundingBox(sw.lat(), sw.lng(), ne.lat(), ne.lng());
-      break;
     case 'yahoo':
       var ybox = this.map.getBoundsLatLon();
       return new BoundingBox(ybox.LatMin, ybox.LonMin, ybox.LatMax, ybox.LonMax);
     case 'microsoft':
-      alert('FIXME');
-      break;
+      var mbox = this.map.GetMapView();
+      var nw = mbox.TopLeftLatLong;
+      var se = mbox.BottomRightLatLong;
+      return new BoundingBox(se.Latitude,nw.Longitude,nw.Latitude,se.Longitude);
   }
+}
+
+Mapstraction.prototype.setBounds = function(bounds){
+    var sw = bounds.getSouthWest();
+    var ne = bounds.getNorthEast();
+    switch (this.api) {
+    case 'google':
+        var gbounds = new GLatLngBounds(new GLatLng(sw.lat,sw.lon),new GLatLng(ne.lat,ne.lon));
+        this.map.setCenter(gbounds.getCenter(), this.map.getBoundsZoomLevel(gbounds));
+	break;
+    case 'yahoo':
+	if(sw.lon > ne.lon)
+	    sw.lon -= 360;
+	var center = new YGeoPoint((sw.lat + ne.lat)/2,
+				     (ne.lon + sw.lon)/2);
+	
+	var container = this.map.getContainerSize();
+	for(var zoom = 1 ; zoom <= 17 ; zoom++){
+	    var sw_pix = convertLatLonXY_Yahoo(sw,zoom);
+	    var ne_pix = convertLatLonXY_Yahoo(ne,zoom);
+	    if(sw_pix.x > ne_pix.x)
+		sw_pix.x -= (1 << (26 - zoom)); //earth circumference in pixel
+	    if(Math.abs(ne_pix.x - sw_pix.x)<=container.width
+	       && Math.abs(ne_pix.y - sw_pix.y) <= container.height){
+		this.map.drawZoomAndCenter(center,zoom);
+		break;
+	    }
+	}
+	break;
+    case 'microsoft':
+        this.map.SetMapView([new VELatLong(sw.lat,sw.lon),new VELatLong(ne.lat,ne.lon)]);
+	//this.map.ZoomIn(); //For some reason, the zoom has to be incremented
+	break;
+    }
 }
 
 Mapstraction.prototype.getMap = function() {
   // FIXME in an ideal world this shouldn't exist right?
   return this.map;
 }
+
 
 //////////////////////////////
 //
@@ -563,34 +625,108 @@ Marker.prototype.setLabel = function(labelText) {
 Marker.prototype.setInfoBubble = function(infoBubble) {
   this.infoBubble = infoBubble;
 }
+Marker.prototype.setInfoDiv = function(infoDiv,div){
+    this.infoDiv = infoDiv;
+    this.div = div;
+}
 
+/**
+ * setIcon sets the icon for a marker
+ * @param {String} iconUrl The URL of the image you want to be the icon
+ */
+Marker.prototype.setIcon = function(iconUrl){
+  this.iconUrl = iconUrl;
+}
+
+/**
+ * toYahoo returns a Yahoo Maps compatible marker pin
+ * @returns a Yahoo Maps compatible marker
+ */
 Marker.prototype.toYahoo = function() {
-  var ymarker = new YMarker(this.location.toYahoo());
+  var ymarker;
+  if(this.iconUrl){
+    ymarker = new YMarker(this.location.toYahoo (),new YImage(this.iconUrl));
+  }else{
+    ymarker = new YMarker(this.location.toYahoo());
+  }
   if(this.labelText) {
     ymarker.addLabel(this.labelText);
-  }
-  if(this.infoBubble) {
-    var theInfo = this.infoBubble;
-    YEvent.Capture(ymarker, EventsList.MouseClick, function() {ymarker.openSmartWindow(theInfo); }); 
-  }
-  return ymarker;
-} 
 
-Marker.prototype.toGoogle = function() {
-  var gmarker = new GMarker(this.location.toGoogle());
-  if(this.labelText) {
-    // FIXME what can we do about this?
   }
+
   if(this.infoBubble) {
     var theInfo = this.infoBubble;
-    GEvent.addListener(gmarker, "click", function() {
-        gmarker.openInfoWindowHtml(theInfo);
-        });
+    YEvent.Capture(ymarker, EventsList.MouseClick, function() {
+        ymarker.openSmartWindow(theInfo); });
   }
+  
+  if(this.infoDiv) {
+      var theInfo = this.infoDiv;
+      var div = this.div;
+      YEvent.Capture(ymarker, EventsList.MouseClick, function() {
+         document.getElementById(div).innerHTML = theInfo;});
+
+  }
+  
+  return ymarker;
+}
+
+/**
+ * toGoogle returns a Google Maps compatible marker pin
+ * @returns Google Maps compatible marker
+ */
+Marker.prototype.toGoogle = function() {
+  var options = new Object();
+  if(this.labelText) {
+    options.title =  this.labelText;
+  }
+  if(this.iconUrl){
+    options.icon = new GIcon(G_DEFAULT_ICON,this.iconUrl);
+  }
+
+  var gmarker = new GMarker( this.location.toGoogle(),options);
+
+   if(this.infoBubble) {
+      var theInfo = this.infoBubble;
+      GEvent.addListener(gmarker, "click", function() {
+	  gmarker.openInfoWindowHtml(theInfo);
+      });
+  }
+ 
+  if(this.infoDiv){
+      var theInfo = this.infoDiv;
+      var div = this.div;
+      GEvent.addListener(gmarker, "click", function() {
+	  document.getElementById(div).innerHTML = theInfo;
+      });
+  }
+  
   return gmarker;
 }
+
+/**
+ * toMicrosoft returns a MSFT VE compatible marker pin
+ * @returns MSFT VE compatible marker
+ */
 Marker.prototype.toMicrosoft = function() {
-  var pin = new VEPushpin(this.pinID,this.location.toMicrosoft(),null,this.labelText,this.infoBubble);
+  var pin = new VEPushpin(this.pinID,this.location.toMicrosoft(),
+      this.iconUrl,this.labelText,this.infoBubble);
+
+  //FIXME
+  //no infodiv possible with ve? can be done but for all markers only
+
   return pin;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
