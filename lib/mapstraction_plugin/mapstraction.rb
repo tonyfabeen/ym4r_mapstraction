@@ -118,6 +118,10 @@ module Ym4r
         @init << add_marker_group(marker_group)
       end
 
+      def clusterer_init(clusterer)
+        @init << add_clusterer(clusterer)
+      end
+
       #Sets the map type displayed by default after the map is loaded.
       def set_map_type_init(map_type)
         @init << set_map_type(map_type)
@@ -143,6 +147,11 @@ module Ym4r
       def marker_group_global_init(marker_group,name)
         declare_global_init(marker_group,name)
         marker_group_init(marker_group)
+      end
+
+      def clusterer_global_init(clusterer,name)
+        declare_global_init(clusterer,name)
+        clusterer_init(clusterer)
       end
 
       #Globally declare a MappingObject with variable name "name"

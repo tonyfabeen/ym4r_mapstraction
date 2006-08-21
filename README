@@ -63,12 +63,19 @@ It is the goal of the Mapstraction API to make it trivial to switch API (for exa
 Markers are constructed with either a LatLonPoint or a 2D-array of coordinates in the first argument, followed by an option hash. The keys to the hash can be <tt>:info_bubble</tt> (text to display when the marker is clicked), <tt>:label</tt> (summary text of the marker; The way it is displayed depends on the mapping service used) or <tt>:icon</tt> (to indicate the URL of an icon to use for the marker). Support for icons is a bit flaky since the different services have different conventions for their origins, so you should probably have different sets of icons depending on the service to make it less confusing for the user.
 
 ===MarkerGroup
-Surprisingly, MarkerGroups are groups of markers. they can be useful if you want to be able to show and hide a group of markers at the same time in response to a user-generated event (for example, as a response to a click on a link in the HTML page) without having to declare all the markers as global variables. Instead you declare only the group as global and give it the markers. Then you can call +show+ and +hide+ on the group, to act on all the markers of the group at the same time.
+Surprisingly, MarkerGroups are groups of markers. They can be useful if you want to be able to show and hide a group of markers at the same time in response to a user-generated event (for example, as a response to a click on a link in the HTML page) without having to declare all the markers as global variables. Instead you declare only the group as global and give it the markers. Then you can call +show+ and +hide+ on the group, to act on all the markers of the group at the same time.
+
+===Clusterer
+A clusterer contains a large number of markers, which are dynamically grouped in clusters if needed. This allows to have a lot of markers on a map without being slowed down too much. It is an adaptation to Mapstraction of Jef Poskanzer's Clusterer2 library for Google Maps. It works for all 3 Mapstraction backends. To use it from your Rails code, do the following:
+	marker_array = [.....] #large number of markers
+	clusterer = Clusterer.new(marker_array,:max_visible_markers => 20)
+	@map.clusterer_init(clusterer)
+By default the markers start being clustered when there are more than 150 in the clusterer. Nothing special happens before this. This setting can be changed with the <tt>:max_visible_markers</tt> option. Other options are possible. Look inside the JS code inside the <tt>clusterer.js</tt> to know what they are.
+
 
 ==Recent changes
-- Release of the project
-- MarkerGroup
-- Some corrections to the main Mapstraction.js file (in removeMarker)
+- Some additions to the base Mapstraction lib
+- Clusterer
 
 ==TODO
 - Update to newer versions of Mapstraction as they come along

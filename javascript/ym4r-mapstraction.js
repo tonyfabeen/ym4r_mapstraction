@@ -20,8 +20,6 @@ function addDataToMarker(marker,options){
 	marker.setInfoDiv(options.infoDiv[0],options.infoDiv[1]);
     return marker;
 }
-
-
 //MarkerGroup
 //Method to add and remove marker group to a Mapstraction map
 

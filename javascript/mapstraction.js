@@ -131,6 +131,7 @@ function Mapstraction(element,api) {
         this.map = new VEMap(this.mapElement.id);
         this.map.LoadMap();
         this.map.AttachEvent("onclick", function(e) { me.clickHandler(e.view.LatLong.Latitude, e.view.LatLong.Longitude, me); });
+	this.map.AttachEvent("onchangeview", function(e) {me.moveendHandler(me)});
       }
       else {
         alert('Virtual Earth script not imported');
@@ -365,14 +366,14 @@ Mapstraction.prototype.setZoom = function(zoom) {
       alert(this.api + ' not supported by Mapstraction.setZoom');
   }
 }
-Mapstraction.prototype.getZoom = function(zoom) {
+Mapstraction.prototype.getZoom = function() {
   switch (this.api) {
     case 'yahoo':
       return 18 - this.map.getZoomLevel(); // maybe?
     case 'google':
       return this.map.getZoom();
     case 'microsoft':
-      return this.map.GetZoom(); // maybe
+      return this.map.GetZoomLevel();
     default:
       alert(this.api + ' not supported by Mapstraction.getZoom');
   }
@@ -586,14 +587,24 @@ function BoundingBox(swlat, swlon, nelat, nelon) {
 BoundingBox.prototype.getSouthWest = function() {
   return this.sw;
 }
+
 BoundingBox.prototype.getNorthEast = function() {
   return this.ne;
 }
+
 BoundingBox.prototype.isEmpty = function() {
   return this.ne == this.sw; // is this right? FIXME
 }
+
 BoundingBox.prototype.toSpan = function() {
   return new LatLonPoint( Math.abs(this.sw.lat - this.ne.lat), Math.abs(this.sw.lon - this.ne.lon) );
+}
+/**
+ * contains indicates if the latlonpoint passed as argument is contained inside the bounding box
+ * @returns true or false
+ */
+BoundingBox.prototype.contains = function(point){
+    return point.lat >= this.sw.lat && point.lat <= this.ne.lat && point.lon >= this.sw.lon && point.lon <= this.ne.lon;
 }
 
 //////////////////////////////

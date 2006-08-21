@@ -1,6 +1,6 @@
 module Ym4r
   module MapstractionPlugin
-    #A graphical marker positionned through geographic coordinates (in the WGS84 datum). An HTML info window can be set to be displayed when the marker is clicked on.
+    #A graphical marker positionned through geographic ccoordinates (in the WGS84 datum). An HTML info window can be set to be displayed when the marker is clicked on.
     class Marker
       include MappingObject
       attr_accessor :point, :options
@@ -34,6 +34,29 @@ module Ym4r
       end
       def create
         "new LatLonPoint(#{@lat},#{@lon})"
+      end
+    end
+
+    #Clustering class, to efficiently manage a large number of markers on a map
+    class Clusterer
+      include MappingObject
+      
+      attr_accessor :options, :markers
+      
+      def initialize(markers = [], options = {})
+        @mapstraction = mapstraction
+        @options = options
+        @markers = markers
+      end
+
+      #To add a marker to the Clusterer before hte mapstraction.clusterer_init is called on the clusterer.
+      #No effect after...
+      def add_marker_init(marker)
+        @markers << marker
+      end
+      
+      def create
+        "new Clusterer(#{MappingObject.javascriptify_variable(@markers)},#{MappingObject.javascriptify_variable(@options)})"
       end
     end
     
