@@ -20,6 +20,19 @@ function addDataToMarker(marker,options){
 	marker.setInfoDiv(options.infoDiv[0],options.infoDiv[1]);
     return marker;
 }
+
+
+//For full screen mode
+function setWindowDims(elem) {
+    if (window.innerWidth){
+	elem.style.height = (window.innerHeight) + "px;";
+	elem.style.width = (window.innerWidth) + "px;";
+    }else if (document.body.clientWidth){
+	elem.style.height = (document.body.clientHeight) + "px;";
+	elem.style.width = (document.body.clientWidth) + "px;";
+    }
+}
+
 //MarkerGroup
 //Method to add and remove marker group to a Mapstraction map
 

@@ -1,6 +1,6 @@
 module Ym4r
   module MapstractionPlugin
-    #A graphical marker positionned through geographic ccoordinates (in the WGS84 datum). An HTML info window can be set to be displayed when the marker is clicked on.
+    #A graphical marker positionned through geographic ccoordinates (in the WGS84 datum). An HTML info window can be set to be displayed when the marker is clicked on. Options are <tt>:info_bubble</tt> (ex: <tt>"Hello"</tt>), <tt>:info_div</tt> (ex: <tt>["Hello","itemContent"]</tt>, the itemContent part indicating the div element where to display the info), <tt>:label</tt> (ex: <tt>"Label"</tt>) and icon (ex: <tt>"/images/icon.png"</tt>).
     class Marker
       include MappingObject
       attr_accessor :point, :options

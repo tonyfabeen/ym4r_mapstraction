@@ -159,12 +159,13 @@ module Ym4r
         @global_init << variable.declare(name)
       end
       
-      #Outputs the initialization code for the map. By default, it outputs the script tags, performs the initialization in response to the onload event of the window and makes the map globally available.
+      #Outputs the initialization code for the map. By default, it outputs the script tags, performs the initialization in response to the onload event of the window and makes the map globally available. You can pass the <tt>:full => true</tt> option to setup fullscreen for the map.
       def to_html(options = {})
         no_load = options[:no_load]
         no_script_tag = options[:no_script_tag]
         no_declare = options[:no_declare]
         no_global = options[:no_global]
+        fullscreen = options[:full]
         
         html = ""
         html << "<script type=\"text/javascript\">\n" if !no_script_tag
@@ -172,16 +173,31 @@ module Ym4r
         html << @global_init * "\n"
         html << "var #{@variable};\n" if !no_declare and !no_global
         html << "window.onload = addCodeToFunction(window.onload,function() {\n" if !no_load
+        
+        if fullscreen
+          #Adding the initial resizing and setting up the event handler for
+          #future resizes
+          html << "setWindowDims($('#{@container}'));\n"
+          html << "if (window.attachEvent) { window.attachEvent(\"onresize\", function() {setWindowDims($('#{@container}'));})} else {window.addEventListener(\"resize\", function() {setWindowDims($('#{@container}')); } , false);}\n"
+        end
+        
         if !no_declare and no_global 
           html << "#{declare(@variable)}\n"
         else
           html << "#{assign_to(@variable)}\n"
         end
+                
         html << @init_begin * "\n"
         html << @init * "\n"
         html << @init_end * "\n"
         html << "\n});\n" if !no_load
         html << "</script>" if !no_script_tag
+        
+        if fullscreen
+          #setting up the style in case of full screen
+          html << "<style>html, body {width: 100%; height: 100%} body {margin-top: 0px; margin-right: 0px; margin-left: 0px; margin-bottom: 0px} ##{@container} {margin:  0px;} </style>"
+        end
+        
         html
       end
       
