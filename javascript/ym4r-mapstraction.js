@@ -28,8 +28,8 @@ function setWindowDims(elem) {
 	elem.style.height = (window.innerHeight) + "px;";
 	elem.style.width = (window.innerWidth) + "px;";
     }else if (document.body.clientWidth){
-	elem.style.height = (document.body.clientHeight) + "px;";
-	elem.style.width = (document.body.clientWidth) + "px;";
+	elem.style.height = (document.body.clientHeight) + "px";
+	elem.style.width = (document.body.clientWidth) + "px";
     }
 }
 
