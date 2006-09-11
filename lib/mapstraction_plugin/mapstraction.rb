@@ -48,10 +48,10 @@ module Ym4r
               #Only one possible key: take it
               api_key = GMAPS_API_KEY
             end
-            a << "<script src=\"http://maps.google.com/maps?file=api&v=2&key=#{api_key}\" type=\"text/javascript\"></script>\n"
+            a << "<script src=\"http://maps.google.com/maps?file=api&amp;v=2&amp;key=#{api_key}\" type=\"text/javascript\"></script>\n"
             a << "<style type=\"text/css\">\n v\:* { behavior:url(#default#VML);}\n</style>" if options[:with_vml]
           elsif type == :yahoo
-            a << "<script type=\"text/javascript\" src=\"http://api.maps.yahoo.com/ajaxymap?v=3.0&appid=YellowMasp4R\"></script>\n"
+            a << "<script type=\"text/javascript\" src=\"http://api.maps.yahoo.com/ajaxymap?v=3.0&amp;appid=YellowMasp4R\"></script>\n"
           elsif type == :microsoft
             a << "<script src=\"http://dev.virtualearth.net/mapcontrol/v3/mapcontrol.js\"></script>\n"
           end
