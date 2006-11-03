@@ -51,7 +51,7 @@ module Ym4r
             a << "<script src=\"http://maps.google.com/maps?file=api&amp;v=2&amp;key=#{api_key}\" type=\"text/javascript\"></script>\n"
             a << "<style type=\"text/css\">\n v\:* { behavior:url(#default#VML);}\n</style>" if options[:with_vml]
           elsif type == :yahoo
-            a << "<script type=\"text/javascript\" src=\"http://api.maps.yahoo.com/ajaxymap?v=3.0&amp;appid=YellowMasp4R\"></script>\n"
+            a << "<script type=\"text/javascript\" src=\"http://api.maps.yahoo.com/ajaxymap?v=3.4&amp;appid=YellowMasp4R\"></script>\n"
           elsif type == :microsoft
             a << "<script src=\"http://dev.virtualearth.net/mapcontrol/v3/mapcontrol.js\"></script>\n"
           end
@@ -80,10 +80,15 @@ module Ym4r
         @init << code
       end
 
-      #Initializes the controls: you can pass a hash with key <tt>:small</tt> (only one for now) and a boolean value as the value (usually true, since the control is not displayed by default)
+      #Initializes the controls: you can pass a hash with key <tt>:small</tt> (only one for now) and a boolean value as the value (usually true, since the control is not displayed by default). Also in later version, you can be a bit more precise, with the following keys: pan (boolean), zoom (:large or :small), overview (boolean), scale (boolean), map_type (boolean)
       def control_init(controls = {})
-        @init << add_small_controls() if controls[:small]
-        @init << add_large_controls() if controls[:large]
+        if controls[:small]
+          @init << add_small_controls()
+        elsif controls[:large]
+          @init << add_large_controls()
+        else
+          @init << add_controls(controls)
+        end
       end
 
       #Initializes the initial center and zoom of the map. +center+ can be both a GLatLng object or a 2-float array.
@@ -122,6 +127,10 @@ module Ym4r
         @init << add_clusterer(clusterer)
       end
 
+      def polyline_init(polyline)
+        @init << add_polyline(polyline)
+      end
+
       #Sets the map type displayed by default after the map is loaded.
       def set_map_type_init(map_type)
         @init << set_map_type(map_type)
@@ -152,6 +161,11 @@ module Ym4r
       def clusterer_global_init(clusterer,name)
         declare_global_init(clusterer,name)
         clusterer_init(clusterer)
+      end
+
+      def polyline_global_init(polyline, name)
+        declare_global_init(polyline,name)
+        polyline_init(clusterer)
       end
 
       #Globally declare a MappingObject with variable name "name"

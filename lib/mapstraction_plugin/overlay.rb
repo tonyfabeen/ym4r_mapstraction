@@ -59,6 +59,24 @@ module Ym4r
         "new Clusterer(#{MappingObject.javascriptify_variable(@markers)},#{MappingObject.javascriptify_variable(@options)})"
       end
     end
+
+    class Polyline 
+      include MappingObject
+      attr_accessor :points, :options
+      
+      def initialize(points,options = {})
+        @points = points
+        @options = options
+      end
+      
+      def create
+        creation = "new Polyline(#{MappingObject.javascriptify_variable(@points)})"
+        if !@options.empty?
+          creation = "addDataToPolyline(#{creation},#{MappingObject.javascriptify_variable(@options)})"
+        end
+        creation
+      end
+    end
     
     #A rectangular bounding box, defined by its south-western and north-eastern corners.
     class BoundingBox < Struct.new(:swlat,:swlon,:nelat,:nelon)

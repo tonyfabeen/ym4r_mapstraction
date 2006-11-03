@@ -21,6 +21,17 @@ function addDataToMarker(marker,options){
     return marker;
 }
 
+function addDataToPolyline(polyline,options){
+    if(options.color)
+	polyline.setColor(options.color);
+    if(options.width)
+	polyline.setWidth(options.width);
+    if(options.opacity)
+	polyline.setOpacity(options.opacity);
+    return polyline;
+}
+
+
 
 //For full screen mode
 function setWindowDims(elem) {
