@@ -115,8 +115,12 @@ module Ym4r
       end
 
       #Initializes the map by adding a marker
-      def marker_init(marker)
-        @init << add_marker(marker)
+      def marker_init(marker, options = {})
+        if options[:open_bubble]
+          @init << add_marker_and_open(marker)
+        else
+          @init << add_marker(marker)
+        end
       end
 
       def marker_group_init(marker_group)
@@ -147,9 +151,9 @@ module Ym4r
       end
             
       #Declares the marker globally with name +name+
-      def marker_global_init(marker,name)
+      def marker_global_init(marker,name, options = {})
         declare_global_init(marker,name)
-        marker_init(marker)
+        marker_init(marker,options)
       end
 
       #Declares the marker group globally with name +name+
@@ -194,7 +198,7 @@ module Ym4r
           html << "setWindowDims($('#{@container}'));\n"
           html << "if (window.attachEvent) { window.attachEvent(\"onresize\", function() {setWindowDims($('#{@container}'));})} else {window.addEventListener(\"resize\", function() {setWindowDims($('#{@container}')); } , false);}\n"
         end
-        
+
         if !no_declare and no_global 
           html << "#{declare(@variable)}\n"
         else
@@ -209,9 +213,9 @@ module Ym4r
         
         if fullscreen
           #setting up the style in case of full screen
-          html << "<style>html, body {width: 100%; height: 100%} body {margin-top: 0px; margin-right: 0px; margin-left: 0px; margin-bottom: 0px} ##{@container} {margin:  0px;} </style>"
+          html << "<style>html, body {width: 100%; height: 100%} body {margin:0} ##{@container} {margin:0} </style>"
         end
-        
+                
         html
       end
       

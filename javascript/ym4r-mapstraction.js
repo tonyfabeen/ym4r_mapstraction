@@ -44,6 +44,11 @@ function setWindowDims(elem) {
     }
 }
 
+Mapstraction.prototype.addMarkerAndOpen = function(marker){
+    this.addMarker(marker);
+    marker.openBubble();
+}
+
 //MarkerGroup
 //Method to add and remove marker group to a Mapstraction map
 
