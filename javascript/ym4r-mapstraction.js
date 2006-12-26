@@ -34,19 +34,12 @@ function addDataToPolyline(polyline,options){
 
 
 //For full screen mode
-function setWindowDims(elem) {
+function setWindowDims(elem,mapstraction) {
     if (window.innerWidth){
-	elem.style.height = (window.innerHeight) + "px;";
-	elem.style.width = (window.innerWidth) + "px;";
+	mapstraction.resizeTo(window.innerWidth,window.innerHeight);
     }else if (document.body.clientWidth){
-	elem.style.height = (document.body.clientHeight) + "px";
-	elem.style.width = (document.body.clientWidth) + "px";
-    }
-}
-
-Mapstraction.prototype.addMarkerAndOpen = function(marker){
-    this.addMarker(marker);
-    marker.openBubble();
+	mapstraction.resizeTo(document.body.clientWidth,document.body.clientHeight);
+	}
 }
 
 //MarkerGroup

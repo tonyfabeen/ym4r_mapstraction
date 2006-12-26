@@ -115,10 +115,8 @@ function Mapstraction(element,api) {
 
   // This is so that it is easy to tell which revision of this file 
   // has been copied into other projects.
-  this.svn_revision_string = '$Revision$';
-
+  this.svn_revision_string = '$Revision: 83 $';
   this.addControlsArgs = new Object();
-  
   this.addAPI(api);
 }
 
@@ -135,26 +133,35 @@ Mapstraction.prototype.swap = function(api) {
 	this.mapElement[this.api].style.visibility = 'hidden';
 	this.mapElement[this.api].style.display = 'none';
 
+
 	this.api = api;
 	this.map = this.maps[api];
+
 	if (this.map == undefined) {
 		this.addAPI(api);
 
 		this.setCenterAndZoom(center,zoom);
-
+		
 		for (i=0; i<this.markers.length; i++) {
-			this.addMarker( this.markers[i], true); 
+		    this.addMarker( this.markers[i], true); 
 		}
+    
 		for (i=0; i<this.polylines.length; i++) {
-			this.addPolyline( this.polylines[i], true); 
+		    this.addPolyline( this.polylines[i], true); 
 		}
+	}else{
+	    
+	    //sync the view
+	    this.setCenterAndZoom(center,zoom);
+	    
+	    //TODO synchronize the markers and polylines too
 	}
-
-	this.setCenterAndZoom(center,zoom);
-	this.addControls(this.addControlsArgs);
-
+    
+        this.addControls(this.addControlsArgs);
+    
 	this.mapElement[this.api].style.visibility = 'visible';
 	this.mapElement[this.api].style.display = 'block';
+
 }
 
 Mapstraction.prototype.addAPI = function(api) {
@@ -176,8 +183,7 @@ Mapstraction.prototype.addAPI = function(api) {
     case 'yahoo':
       if (YMap) {
         this.map = new YMap(c);
-        this.map.resizeTo( new YSize(map_width, map_height) ); // yahoo doesnt resize the map to the CSS dimensions magically
-
+   
         YEvent.Capture(this.map,EventsList.MouseClick,function(event,location) { me.clickHandler(location.Lat,location.Lon,location,me) });
         YEvent.Capture(this.map,EventsList.changeZoom,function() { me.moveendHandler(me) });
         YEvent.Capture(this.map,EventsList.endPan,function() { me.moveendHandler(me) });
@@ -214,10 +220,19 @@ Mapstraction.prototype.addAPI = function(api) {
       if (VEMap) {
 
         c.style.position='relative';
+
+	/* Hack so the VE works with FF2 */
+	var ffv = 0;
+	var ffn = "Firefox/";
+	var ffp = navigator.userAgent.indexOf(ffn);
+	if (ffp != -1) ffv = parseFloat(navigator.userAgent.substring(ffp+ffn.length));
+	if (ffv >= 1.5) {
+		Msn.Drawing.Graphic.CreateGraphic=function(f,b) { return new Msn.Drawing.SVGGraphic(f,b) }
+	}
+	
         this.map = new VEMap(c.id);
         this.map.LoadMap();
-
-        this.map.Resize(map_width, map_height); // MSFT dont magically resize map to CSS dimensions
+        
         this.map.AttachEvent("onclick", function(e) { me.clickHandler(e.view.LatLong.Latitude, e.view.LatLong.Longitude, me); });
         this.map.AttachEvent("onchangeview", function(e) {me.moveendHandler(me)});
       }
@@ -276,11 +291,36 @@ Mapstraction.prototype.addAPI = function(api) {
 
       break;
 
-
+    case 'multimap':
+      this.map = new MultimapViewer( this.mapElement );
+      this.map.drawAndPositionMap( new MMLatLon( 51.5145, -0.1085 ) );
+      break;
     default:
       alert(api + ' not supported by mapstraction');
   }
+  
+  this.resizeTo(map_width,map_height);
   this.maps[api] = this.map;
+}
+
+//Resize the current map to the specified width and height
+//(since it is actually on a child div of the mapElement passed
+//as argument to the Mapstraction constructor, the resizing of this
+//mapElement may have no effect on the size of the actual map)
+Mapstraction.prototype.resizeTo = function(width,height){
+    switch (this.api) {
+    case 'yahoo':
+    this.map.resizeTo(new YSize(width,height));
+    break;
+    case 'google':
+    this.mapElement[this.api].style.width = width;
+    this.mapElement[this.api].style.height = height;
+    this.map.checkResize();
+    break;
+    case 'microsoft':
+    this.map.Resize(width, height);
+    break;
+    }
 }
 
 /////////////////////////
@@ -373,7 +413,7 @@ Mapstraction.prototype.addControls = function( args ) {
 	  else map.removePanControl();
       if ( args.zoom == 'large' ) map.addZoomLong();
       else if ( args.zoom == 'small' ) map.addZoomShort();
-      //else map.removeZoomControl();
+    else map.removeZoomScale();
       break;
 
     case 'openlayers':
@@ -403,6 +443,12 @@ Mapstraction.prototype.addSmallControls = function() {
     case 'openlayers':
       this.map.addControl(new OpenLayers.Control.LayerSwitcher());
       break;
+    case 'multimap':
+      smallPanzoomWidget = new MMSmallPanZoomWidget();
+      this.map.addWidget( smallPanzoomWidget );
+      this.addControlsArgs.pan = true; 
+      this.addControlsArgs.zoom = 'small';
+      break;
   }
 }
 
@@ -414,8 +460,7 @@ Mapstraction.prototype.addLargeControls = function() {
     case 'yahoo':
       this.map.addPanControl();
       this.map.addZoomLong();
-      //Filling the addControlsArgs object in case of swapping
-      this.addControlsArgs.pan = true; 
+      this.addControlsArgs.pan = true;  // keep the controls in case of swap
       this.addControlsArgs.zoom = 'large';
       break;
     case 'google':
@@ -429,6 +474,11 @@ Mapstraction.prototype.addLargeControls = function() {
       this.addControlsArgs.scale = true;
       this.addControlsArgs.map_type = true;
       break;
+    case 'multimap':
+      panzoomWidget = new MMPanZoomWidget();
+      this.map.addWidget( panzoomWidget );
+      this.addControlsArgs.pan = true;  // keep the controls in case of swap
+      this.addControlsArgs.zoom = 'large';
   }
 }
 
@@ -490,7 +540,11 @@ Mapstraction.prototype.setCenterAndZoom = function(point, zoom) {
       this.map.SetCenterAndZoom(point.toMicrosoft(),zoom);
       break;
     case 'openlayers':
-      this.map.setCenter(new OpenLayers.LonLat(point.longitude, point.latitude), zoom);
+      this.map.setCenter(new OpenLayers.LonLat(point.lng, point.lat), zoom);
+      break;
+    case 'multimap':
+      this.map.goToPosition( new MMLatLon( point.lat, point.lng ) );
+      this.map.setZoomFactor( zoom );
       break;
     default:
       alert(this.api + ' not supported by Mapstraction.setCenterAndZoom');
@@ -527,6 +581,9 @@ Mapstraction.prototype.addMarker = function(marker,old) {
       break;
     case 'openlayers':
       //this.map.addPopup(new OpenLayers.Popup("chicken", new OpenLayers.LonLat(5,40), new OpenLayers.Size(200,200), "example popup"));
+      break;
+    case 'multimap':
+      this.map.createMarker( new MMLatLon( marker.location.lat, marker.location.lng )); // FIXME
       break;
     default:
       alert(this.api + ' not supported by Mapstraction.addMarker');
@@ -576,9 +633,15 @@ Mapstraction.prototype.removeAllMarkers = function() {
     case 'microsoft':
       this.map.DeleteAllPushpins();
       break;
+    case 'multimap':
+      this.map.removeAllOverlays();
+      break;
   }
-  this.map.markers = new Array(); // clear the mapstraction list of markers too
+
+  this.markers = new Array(); // clear the mapstraction list of markers too
+
 }
+
 
 /**
 * Add a polyline to the map
@@ -657,10 +720,8 @@ Mapstraction.prototype.removeAllPolylines = function() {
       this.map.DeleteAllPolylines();
       break;
   }
-  this.map.polylines = new Array(); 
+  this.polylines = new Array(); 
 }
-
-
 
 /**
  * getCenter gets the central point of the map
@@ -984,7 +1045,6 @@ Mapstraction.prototype.setBounds = function(bounds){
       break;
     case 'microsoft':
       this.map.SetMapView([new VELatLong(sw.lat,sw.lon),new VELatLong(ne.lat,ne.lon)]);
-      //this.map.ZoomIn(); //For some reason, the zoom has to be incremented once more
       break;
   }
 }
@@ -1050,9 +1110,9 @@ LatLonPoint.prototype.toString = function() {
   return this.lat + ', ' + this.lon;
 }
 /**
- * distance returns the distance in meters between two points
+ * distance returns the distance in kilometers between two points
  * @param {LatLonPoint} otherPoint The other point to measure the distance from to this one
- * @returns the distance between the points in meters
+ * @returns the distance between the points in kilometers
  * @type double
  */
 LatLonPoint.prototype.distance = function(otherPoint) {
@@ -1186,6 +1246,7 @@ Marker.prototype.setInfoDiv = function(infoDiv,div){
     this.div = div;
 }
 
+
 /**
  * setIcon sets the icon for a marker
  * @param {String} iconUrl The URL of the image you want to be the icon
@@ -1217,7 +1278,7 @@ Marker.prototype.toYahoo = function() {
         ymarker.openSmartWindow(theInfo); });
   }
 
-   if(this.infoDiv) {
+  if(this.infoDiv) {
       var theInfo = this.infoDiv;
       var div = this.div;
       YEvent.Capture(ymarker, EventsList.MouseClick, function() {
@@ -1268,10 +1329,6 @@ Marker.prototype.toGoogle = function() {
 Marker.prototype.toMicrosoft = function() {
   var pin = new VEPushpin(this.pinID,this.location.toMicrosoft(),
       this.iconUrl,this.labelText,this.infoBubble);
-
-  //FIXME
-  //no infodiv possible with ve? can be done but for all markers only
-  
   return pin;
 }
 
@@ -1300,7 +1357,6 @@ Marker.prototype.openBubble = function() {
     alert('You need to add the marker before opening it');
   }
 }
-
 
 
 ///////////////
@@ -1373,8 +1429,5 @@ Polyline.prototype.toMicrosoft = function() {
     mpolyline = new VEPolyline(this.pllID,mpoints,color,this.width);
     return mpolyline;
 }
-
-
-
 
 
