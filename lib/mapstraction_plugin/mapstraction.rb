@@ -149,6 +149,16 @@ module Ym4r
       def record_global_init(code)
         @global_init << code
       end
+
+       #Registers an event
+      def event_init(object,event,callback)
+        @init << "#{object.to_javascript}.addEventListener(\"#{MappingObject.javascriptify_method(event.to_s)}\",#{callback})"
+      end
+
+      #Registers an event globally
+      def event_global_init(object,event,callback)
+        @global_init << "#{object.to_javascript}.addEventListener(\"#{MappingObject.javascriptify_method(event.to_s)}\",#{callback})"
+      end
             
       #Declares the marker globally with name +name+
       def marker_global_init(marker,name, options = {})
