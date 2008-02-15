@@ -32,7 +32,7 @@ module Ym4r
       def self.header(types,options = {})
         a = ""
         Array(types).each do |type|
-          if type == :google
+          if type == :google || type == :openstreetmap
             options[:with_vml] = true unless options.has_key?(:with_vml)
             if options.has_key?(:key)
               api_key = options[:key]
@@ -54,9 +54,68 @@ module Ym4r
             a << "<script type=\"text/javascript\" src=\"http://api.maps.yahoo.com/ajaxymap?v=3.4&amp;appid=YellowMasp4R\"></script>\n"
           elsif type == :microsoft
             a << "<script src=\"http://dev.virtualearth.net/mapcontrol/v3/mapcontrol.js\"></script>\n"
+          elsif type == :map24
+            if options.has_key?(:key)
+              api_key = options[:key]
+            elsif MAP24_API_KEY.is_a?(Hash)
+              #For this environment, multiple hosts are possible.
+              #:host must have been passed as option
+              if options.has_key?(:host)
+                api_key = MAP24_API_KEY[options[:host]]
+              else
+                raise AmbiguousMap24APIKeyException.new(MAP24_API_KEY.keys.join(","))
+              end
+            else
+              #Only one possible key: take it
+              api_key = MAP24_API_KEY
+            end
+            a << "<script type=\"text/javascript\" language=\"javascript\" src=\"http://api.maptp.map24.com/ajax?appkey=#{api_key}\"></script>\n"
+          elsif type == :multimap
+            if options.has_key?(:key)
+              api_key = options[:key]
+            elsif MULTIMAP_API_KEY.is_a?(Hash)
+              #For this environment, multiple hosts are possible.
+              #:host must have been passed as option
+              if options.has_key?(:host)
+                api_key = MULTIMAP_API_KEY[options[:host]]
+              else
+                raise AmbiguousMultimapAPIKeyException.new(MULTIMAP_API_KEY.keys.join(","))
+              end
+            else
+              #Only one possible key: take it
+              api_key = MULTIMAP_API_KEY
+            end
+            a << "<script type=\"text/javascript\" src=\"http://developer.multimap.com/API/maps/1.2/#{api_key}\"></script>\n"
+          elsif type == :mapquest
+            if options.has_key?(:key)
+              api_key = options[:key]
+            elsif MAPQUEST_API_KEY.is_a?(Hash)
+              #For this environment, multiple hosts are possible.
+              #:host must have been passed as option
+              if options.has_key?(:host)
+                api_key = MAPQUEST_API_KEY[options[:host]]
+              else
+                raise AmbiguousMapquestAPIKeyException.new(MAPQUEST_API_KEY.keys.join(","))
+              end
+            else
+              #Only one possible key: take it
+              api_key = MAPQUEST_API_KEY
+            end
+            #a << "<script src=\"http://web.openapi.mapquest.com/oapi/transaction?request=script&amp;key=#{api_key}\" type=\"text/javascript\"></script>\n"
+            a << "<script src=\"http://btilelog.access.mapquest.com/tilelog/transaction?transaction=script&amp;key=#{api_key}&amp;ipr=true&amp;itk=true&amp;v=5.2.0\" type=\"text/javascript\"></script>\n"
+            a << "<!-- The JSAPI Source files (only needed for geocoding & routing with MapQuest) -->\n"
+            a << "<script src=\"/javascripts/mapquest-js/mqcommon.js\" type=\"text/javascript\"></script>\n"
+            a << "<script src=\"/javascripts/mapquest-js/mqutils.js\" type=\"text/javascript\"></script>\n"
+            a << "<script src=\"/javascripts/mapquest-js/mqobjects.js\" type=\"text/javascript\"></script>\n"
+            a << "<script src=\"/javascripts/mapquest-js/mqexec.js\" type=\"text/javascript\"></script>\n"
+          elsif type == :freeearth
+            a << "<script type=\"text/javascript\" src=\"http://freeearth.poly9.com/api.js\"></script>\n"
+          elsif type == :openlayers
+            a << "<script src=\"http://openlayers.org/api/OpenLayers.js\"></script>\n"
           end
         end
         a << "<script src=\"/javascripts/mapstraction.js\" type=\"text/javascript\"></script>\n"
+        a << "<script src=\"/javascripts/mapstraction-route.js\" type=\"text/javascript\"></script>\n"
         a << "<script src=\"/javascripts/ym4r-mapstraction.js\" type=\"text/javascript\"></script>\n"
         a
       end
@@ -228,7 +287,7 @@ module Ym4r
                 
         html
       end
-      
+
       #Outputs in JavaScript the creation of a Mapstraction object 
       def create
         "new Mapstraction(\"#{@container}\",\"#{@map_type.to_s}\")"
@@ -238,6 +297,14 @@ module Ym4r
     class AmbiguousGMapsAPIKeyException < StandardError
     end
 
+    class AmbiguousMap24APIKeyException < StandardError
+    end
+    
+    class AmbiguousMapquestAPIKeyException < StandardError
+    end
+  
+    class AmbiguousMultimapAPIKeyException < StandardError
+    end
   end
 end
 
