@@ -101,7 +101,6 @@ module Ym4r
               #Only one possible key: take it
               api_key = MAPQUEST_API_KEY
             end
-            #a << "<script src=\"http://web.openapi.mapquest.com/oapi/transaction?request=script&amp;key=#{api_key}\" type=\"text/javascript\"></script>\n"
             a << "<script src=\"http://btilelog.access.mapquest.com/tilelog/transaction?transaction=script&amp;key=#{api_key}&amp;ipr=true&amp;itk=true&amp;v=5.2.0\" type=\"text/javascript\"></script>\n"
             a << "<!-- The JSAPI Source files (only needed for geocoding & routing with MapQuest) -->\n"
             a << "<script src=\"/javascripts/mapquest-js/mqcommon.js\" type=\"text/javascript\"></script>\n"

@@ -373,7 +373,6 @@ Mapstraction.prototype.addAPI = function(element,api) {
       break;
     case 'openstreetmap':
       // for now, osm is a hack on top of google
-
       if (GMap2) {
         if (GBrowserIsCompatible()) {
           this.maps[api] = new GMap2(element);
@@ -2289,6 +2288,87 @@ Mapstraction.prototype.addOverlay = function(url, autoCenterAndZoom) {
 
 }
 
+/* Adds a Tile Layer to the map
+ * 
+ * Requires providing a parameterized tile url. Use {Z}, {X}, and {Y} to specify where the parameters 
+ *  should go in the URL. 
+ * 
+ * For example, the OpenStreetMap tiles are:
+ *  http://tile.openstreetmap.org/{Z}/{X}/{Y}.png
+ * 
+ * @param {tile_url} template url of the tiles. 
+ * @param {opacity} opacity of the tile layer - 0 is transparent, 1 is opaque. (default=0.6) 
+ * @param {copyright_text} copyright text to use for the tile layer. (default=Mapstraction)
+ * @param {min_zoom} Minimum (furtherest out) zoom level that tiles are available (default=1)
+ * @param {max_zoom} Maximum (closest) zoom level that the tiles are available (default=18)
+ */
+Mapstraction.prototype.addTileLayer = function(tile_url, opacity, copyright_text, min_zoom, max_zoom) {
+    if(!tile_url)
+        return;
+	if (! this.tileLayers) {
+		this.tileLayers = [];
+	}    
+	if(!opacity)
+	    opacity = 0.6;
+	if(!copyright_text)
+	    copyright_text = "Mapstraction";
+	if(!min_zoom)
+	    min_zoom = 1;
+	if(!max_zoom)
+	    max_zoom = 18;
+	    
+    console.log(this.api);
+    switch (this.api) {
+        case 'google':
+        case 'openstreetmap':
+        var copyright = new GCopyright(1, new GLatLngBounds(new GLatLng(-90,-180), new GLatLng(90,180)), 0, "copyleft"); 
+        var copyrightCollection = new GCopyrightCollection(copyright_text); 
+        copyrightCollection.addCopyright(copyright); 
+
+        var tilelayers = new Array(); 
+        tilelayers[0] = new GTileLayer(copyrightCollection, min_zoom, max_zoom); 
+        tilelayers[0].isPng = function() { return true;};
+        tilelayers[0].getOpacity = function() { return opacity; }            
+        tilelayers[0].getTileUrl = function (a, b) {
+            url = tile_url;
+            url = url.replace(/\{Z\}/,b);
+            url = url.replace(/\{X\}/,a.x);
+            url = url.replace(/\{Y\}/,a.y);
+            return url             
+        };
+        tileLayerOverlay = new GTileLayerOverlay(tilelayers[0]);
+
+        this.tileLayers.push( [tile_url, tileLayerOverlay, true] );
+        this.maps[this.api].addOverlay(tileLayerOverlay);
+        break;
+
+    }
+    return tileLayerOverlay;
+}
+
+/* Turns a Tile Layer on or off
+ * 
+ * @param {tile_url} url of the tile layer that was created. 
+ */
+Mapstraction.prototype.toggleTileLayer = function(tile_url) {
+    switch (this.api) {
+        case 'google':
+        case 'openstreetmap':
+        for (var f=0; f<this.tileLayers.length; f++) {
+            if(this.tileLayers[f][0] == tile_url) {
+                if(this.tileLayers[f][2]) {
+                    this.maps[this.api].removeOverlay(this.tileLayers[f][1]);
+                    this.tileLayers[f][2] = false;
+                } else {
+                    this.maps[this.api].addOverlay(this.tileLayers[f][1]);
+                    this.tileLayers[f][2] = true;                    
+                }
+            }
+        }        
+        break;
+    }
+}
+
 /**
  * addFilter adds a marker filter
  * @param {field} name of attribute to filter on
@@ -2680,13 +2760,13 @@ BoundingBox.prototype.toSpan = function() {
  */
 BoundingBox.prototype.extend = function(point) {
     if(this.sw.lat > point.lat)
-        this.sw.setLat(point.lat);
+        this.sw.lat = point.lat;
     if(this.sw.lon > point.lon)
-        this.sw.setLon(point.lon);
+        this.sw.lon = point.lon;
     if(this.ne.lat < point.lat)
-        this.ne.setLat(point.lat);
+        this.ne.lat = point.lat;
     if(this.ne.lon < point.lon)
-        this.ne.setLon(point.lon);
+        this.ne.lon = point.lon;
         
   return;
 }
@@ -3183,7 +3263,7 @@ Marker.prototype.openBubble = function() {
     this.mapstraction.onload[this.api].push( function() { my_marker.openBubble(); } );
     return;
   }
-	
+    
   if( this.api) { 
     switch (this.api) {
       case 'yahoo':

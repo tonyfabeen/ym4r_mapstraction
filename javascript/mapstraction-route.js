@@ -161,3 +161,40 @@ MapstractionRouter.prototype.route = function(addresses) {
 			break;
   }
 }
+
+/**
+ * Performs a routing and then calls the specified callback function with the waypoints and route
+ * @param {Array} addresses The array of point/location objects to use for the route
+ */
+MapstractionRouter.prototype.routePoints = function(points) { 
+
+	var api = this.api;
+	switch (api) {
+		case 'mapquest':
+			var waypoints = new MQLocationCollection();
+			var routeOptions = new MQRouteOptions();
+			
+			for (var i=0;i<points.length;i++) {
+				var geoAddr = new MQGeoAddress();
+				geoAddr.setMQLatLng(new MQLatLng(points[i].lat, points[i].lng));
+				waypoints.add(geoAddr);
+			}
+
+			var session = new MQSession();	
+			var routeResults = new MQRouteResults();
+			var routeBoundingBox = new MQRectLL(new MQLatLng(),new MQLatLng());	
+			var sessId = this.routers[api].createSessionEx(session);
+			this.routers[api].doRoute(waypoints,routeOptions,routeResults,sessId,routeBoundingBox);
+						
+			var routeParameters = new Array();
+			routeParameters['results'] = routeResults;
+			routeParameters['bounding_box'] = routeBoundingBox;
+			routeParameters['session_id'] = sessId;
+			
+			this.callback(points, routeParameters);
+			break;
+    default:
+      alert(api + ' not supported by mapstraction-router');
+			break;
+  }
+}
